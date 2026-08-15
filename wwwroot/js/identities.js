@@ -1,6 +1,7 @@
 /**
  * Limbus Randomized Team Picker - Identity Catalog JavaScript
  * Handles loading, searching, sorting, and rendering of Identity cards.
+ * Client-side selection state with IsSelected toggle.
  */
 
 (function () {
@@ -120,13 +121,21 @@
      */
     function createCardHTML(identity) {
         const rarityClass = `Rar${identity.rarity}`;
+        const isSelected = identity.isSelected ? 'is-selected' : '';
+        const ariaPressed = identity.isSelected ? 'true' : 'false';
 
         // Escape HTML entities in identity name
         const escapedName = escapeHtml(identity.identityName);
 
         return `
-            <div class="identity-card" data-name="${escapeHtml(identity.identityName.toLowerCase())}" data-rarity="${identity.rarity}">
-                <div class="identity-image-wrapper">
+            <div class="identity-card ${isSelected}" 
+                 data-id="${identity.characterName}||${identity.identityName}" 
+                 data-rarity="${identity.rarity}"
+                 tabindex="0" 
+                 role="button" 
+                 aria-pressed="${ariaPressed}"
+                 aria-label="${escapedName}">
+                <div class="identity-card__visual">
                     <img 
                         src="${escapeHtml(identity.imageUrl)}" 
                         alt="${escapedName}"
@@ -134,13 +143,12 @@
                         decoding="async"
                         width="125"
                         height="193"
+                        class="identity-card__image"
                         onerror="this.classList.add('img-fallback'); this.alt='Image unavailable';"
                     />
-                    <div class="IDRar ${rarityClass}"></div>
+                    <div class="identity-card__rarity ${rarityClass} IDRar"></div>
                 </div>
-                <div class="identity-info">
-                    <div class="identity-name">${escapedName}</div>
-                </div>
+                <div class="identity-card__name">${escapedName}</div>
             </div>
         `;
     }
@@ -178,16 +186,78 @@
         } else {
             catalogGrid.style.display = 'grid';
             noResultsState.style.display = 'none';
-            resultsCount.textContent = `Showing ${filteredIdentities.length} of ${allIdentities.length} identities`;
+            resultsCount.textContent = filteredIdentities.length === allIdentities.length
+                ? `${allIdentities.length} identities`
+                : `${filteredIdentities.length} of ${allIdentities.length} identities`;
         }
 
         // Render cards
-        if (filteredIdentities.length > 0) {
-            const html = filteredIdentities.map(createCardHTML).join('');
-            catalogGrid.innerHTML = html;
-        } else {
-            catalogGrid.innerHTML = '';
+        const html = filteredIdentities.map(identity => createCardHTML(identity)).join('');
+        catalogGrid.innerHTML = html;
+
+        // Attach event listeners to cards
+        attachCardListeners();
+    }
+
+    // ============================================================
+    // Card Interaction
+    // ============================================================
+
+    /**
+     * Attach click and keyboard listeners to all identity cards.
+     */
+    function attachCardListeners() {
+        const cards = catalogGrid.querySelectorAll('.identity-card');
+
+        cards.forEach(card => {
+            // Click handler
+            card.addEventListener('click', handleCardClick);
+
+            // Keyboard handler
+            card.addEventListener('keydown', handleCardKeydown);
+        });
+    }
+
+    /**
+     * Handle card click - toggle selection state.
+     */
+    function handleCardClick(e) {
+        const card = e.currentTarget;
+        const dataId = card.getAttribute('data-id');
+        const [charName, identityName] = dataId.split('||');
+
+        // Find the identity in allIdentities
+        const identity = allIdentities.find(i =>
+            i.characterName === charName && i.identityName === identityName
+        );
+
+        if (!identity) return;
+
+        // Toggle selection
+        identity.isSelected = !identity.isSelected;
+
+        // Update DOM
+        updateCardDOM(card, identity);
+    }
+
+    /**
+     * Handle keyboard interaction (Enter and Space).
+     */
+    function handleCardKeydown(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleCardClick(e);
         }
+    }
+
+    /**
+     * Update the DOM element to reflect the identity's selection state.
+     */
+    function updateCardDOM(card, identity) {
+        const isSelected = identity.isSelected;
+
+        card.classList.toggle('is-selected', isSelected);
+        card.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
     }
 
     // ============================================================
@@ -217,7 +287,11 @@
                 throw new Error('Invalid response format');
             }
 
-            allIdentities = identities;
+            // Ensure all identities have isSelected property
+            allIdentities = identities.map(identity => ({
+                ...identity,
+                isSelected: identity.isSelected === true
+            }));
 
             // Render initial catalog
             renderCatalog();

@@ -34,4 +34,9 @@ public class Identity
     /// Gets or sets the rarity of this identity (1 = Rar1, 2 = Rar2, 3 = Rar3).
     /// </summary>
     public int Rarity { get; set; } = 1;
+
+    /// <summary>
+    /// Gets or sets whether this identity is currently selected by the user.
+    /// </summary>
+    public bool IsSelected { get; set; } = false;
 }
