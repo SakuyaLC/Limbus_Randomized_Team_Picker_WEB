@@ -20,7 +20,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\Models\" />
+    <Folder Include="Resources\Images\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\favicon.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
