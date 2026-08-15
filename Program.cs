@@ -9,6 +9,7 @@ builder.Services.AddHttpClient("WikiHttpClient", client =>
     client.DefaultRequestHeaders.Accept.TryParseAdd("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
 });
 builder.Services.AddScoped<Limbus_Randomized_Team_Picker_WEB.Services.IIdentityScraperService, Limbus_Randomized_Team_Picker_WEB.Services.IdentityScraperService>();
+builder.Services.AddScoped<Limbus_Randomized_Team_Picker_WEB.Services.ITeamAssemblyService, Limbus_Randomized_Team_Picker_WEB.Services.TeamAssemblyService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {

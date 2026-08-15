@@ -7,7 +7,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Browse and discover all Identity cards from Limbus Company. Click to select your favorites." />
+    <meta name="description" content="Browse and discover all Identity cards from Limbus Company. Click to select your favorites and assemble your team." />
     <title>@ViewData["Title"]</title>
     <link rel="stylesheet" href="~/css/identities.css" />
 </head>
@@ -18,27 +18,78 @@
     </header>
 
     <main class="catalog-container">
-        <!-- Controls Section -->
-        <section class="catalog-controls">
-            <div class="search-wrapper">
-                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="m21 21-4.35-4.35" />
-                </svg>
-                <input type="text" id="searchInput" class="search-input" placeholder="Search identities..." autocomplete="off" aria-label="Search identities by name" />
-                <button id="clearSearch" class="clear-search-btn" title="Clear search" style="display: none;">&times;</button>
+        <!-- Team Section (Hidden until assembled) -->
+        <section id="teamSection" class="team-section" style="display: none;">
+            <div class="team-header">
+                <h2 class="team-title">Assembled Team</h2>
+                <p class="team-subtitle">Randomly selected from your chosen identities</p>
             </div>
 
-            <div class="sort-wrapper">
-                <label for="sortSelect" class="sort-label">Sort:</label>
-                <select id="sortSelect" class="sort-select">
-                    <option value="name-asc">Name A-Z</option>
-                    <option value="name-desc">Name Z-A</option>
-                    <option value="character-asc">Character A-Z</option>
-                    <option value="character-desc">Character Z-A</option>
-                    <option value="rarity-asc">Rarity ↑</option>
-                    <option value="rarity-desc">Rarity ↓</option>
-                </select>
+            <div id="teamGrid" class="team-grid"></div>
+        </section>
+
+        <!-- Empty Team State -->
+        <div id="emptyTeamState" class="empty-team-state">
+            <div class="empty-team-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+            </div>
+            <h3>Assemble Your Team</h3>
+            <p>Select identities from the catalog below, then assemble your team</p>
+        </div>
+
+        <!-- Controls Section -->
+        <section class="catalog-controls">
+            <div class="controls-left">
+                <div class="search-wrapper">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.35-4.35" />
+                    </svg>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search identities..." autocomplete="off" aria-label="Search identities by name" />
+                    <button id="clearSearch" class="clear-search-btn" title="Clear search" style="display: none;">&times;</button>
+                </div>
+
+                <div class="sort-wrapper">
+                    <label for="sortSelect" class="sort-label">Sort:</label>
+                    <select id="sortSelect" class="sort-select">
+                        <option value="name-asc">Name A-Z</option>
+                        <option value="name-desc">Name Z-A</option>
+                        <option value="character-asc">Character A-Z</option>
+                        <option value="character-desc">Character Z-A</option>
+                        <option value="rarity-asc">Rarity ↑</option>
+                        <option value="rarity-desc">Rarity ↓</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="controls-right">
+                <div class="selection-controls">
+                    <button id="selectAllBtn" class="btn btn-select-all" aria-label="Select all identities">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Select All
+                    </button>
+                    <button id="clearBtn" class="btn btn-clear" aria-label="Clear all selections">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                        Clear
+                    </button>
+                </div>
+
+                <button id="assembleBtn" class="btn btn-assemble" aria-label="Assemble team from selected identities">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                    Assemble Team
+                </button>
             </div>
 
             <div class="results-info">
