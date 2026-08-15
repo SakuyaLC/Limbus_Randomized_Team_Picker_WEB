@@ -8,6 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="List of Identities - Limbus Company Wiki_files\**" />
+    <Content Remove="List of Identities - Limbus Company Wiki_files\**" />
+    <EmbeddedResource Remove="List of Identities - Limbus Company Wiki_files\**" />
+    <None Remove="List of Identities - Limbus Company Wiki_files\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AngleSharp" Version="1.1.2" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
   </ItemGroup>

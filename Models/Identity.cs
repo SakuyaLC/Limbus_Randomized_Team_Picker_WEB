@@ -29,4 +29,9 @@ public class Identity
     /// Gets or sets the file name of the identity image.
     /// </summary>
     public string ImageFileName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the rarity of this identity (1 = Rar1, 2 = Rar2, 3 = Rar3).
+    /// </summary>
+    public int Rarity { get; set; } = 1;
 }

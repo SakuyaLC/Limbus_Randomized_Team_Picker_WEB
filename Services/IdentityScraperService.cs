@@ -169,6 +169,19 @@ public class IdentityScraperService : IIdentityScraperService
 
     private static Identity? ExtractIdentity(IElement idRec, string characterName)
     {
+        // Extract rarity from <div class="IDRar RarX"> inside IDRec
+        var rarDiv = idRec.QuerySelector("div.IDRar");
+        int rarity = 1; // default to Rar1
+        if (rarDiv != null)
+        {
+            var rarClass = rarDiv.ClassList?.ToArray() ?? Array.Empty<string>();
+            foreach (var cls in rarClass)
+            {
+                if (cls == "Rar3") rarity = 3;
+                else if (cls == "Rar2") rarity = 2;
+            }
+        }
+
         var images = idRec.QuerySelectorAll("img");
         IElement? matchingImage = null;
         string? identityFileName = null;
@@ -232,7 +245,8 @@ public class IdentityScraperService : IIdentityScraperService
         }
 
         var identityPageUrl = identityLink != null ? ResolveUrl(identityLink.GetAttribute("href")!) : string.Empty;
-        var imageUrl = ResolveUrl(matchingImage.GetAttribute("src")!);
+        var thumbnailUrl = ResolveUrl(matchingImage.GetAttribute("src")!);
+        var imageUrl = ConvertThumbnailToOriginalUrl(thumbnailUrl, identityFileName);
 
         return new Identity
         {
@@ -240,8 +254,67 @@ public class IdentityScraperService : IIdentityScraperService
             IdentityName = identityName ?? string.Empty,
             IdentityPageUrl = identityPageUrl,
             ImageUrl = imageUrl,
-            ImageFileName = identityFileName
+            ImageFileName = identityFileName,
+            Rarity = rarity
         };
+    }
+
+    /// <summary>
+    /// Converts a wiki thumbnail URL to the original image URL.
+    /// Example: /images/thumb/File.png/125px-File.png?hash -> /images/File.png
+    /// </summary>
+    private static string ConvertThumbnailToOriginalUrl(string thumbnailUrl, string? fileName)
+    {
+        if (string.IsNullOrEmpty(thumbnailUrl))
+            return string.Empty;
+
+        // Try to extract the original filename from the thumbnail URL
+        // Format: /images/thumb/FILENAME/125px-FILENAME?hash
+        // Or: https://limbuscompany.wiki.gg/images/thumb/FILENAME/125px-FILENAME?hash
+
+        try
+        {
+            var uri = new Uri(thumbnailUrl);
+            var path = uri.AbsolutePath;
+
+            // Check if it's a thumbnail URL
+            if (!path.Contains("/images/thumb/"))
+                return thumbnailUrl;
+
+            // Extract the filename from the path
+            // Path: /images/thumb/FILENAME/125px-FILENAME?hash
+            var parts = path.Split('/');
+            // Find "thumb" and take the next part as filename
+            for (int i = 0; i < parts.Length - 1; i++)
+            {
+                if (parts[i] == "thumb" && i + 1 < parts.Length)
+                {
+                    var originalFileName = parts[i + 1];
+                    // Remove query string if present
+                    originalFileName = originalFileName.Split('?')[0];
+
+                    // Construct original URL: /images/FILENAME
+                    var baseUrl = WikiBaseUrl;
+                    if (!baseUrl.EndsWith("/"))
+                        baseUrl += "/";
+
+                    return baseUrl + "images/" + originalFileName;
+                }
+            }
+
+            // Fallback: try to use ImageFileName
+            if (!string.IsNullOrEmpty(fileName))
+            {
+                return WikiBaseUrl + "/images/" + fileName;
+            }
+
+            return thumbnailUrl;
+        }
+        catch
+        {
+            // If parsing fails, return the original thumbnail URL
+            return thumbnailUrl;
+        }
     }
 
     private static string ResolveUrl(string url)

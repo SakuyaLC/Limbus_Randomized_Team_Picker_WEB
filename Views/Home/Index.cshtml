@@ -1,0 +1,81 @@
+@{
+    ViewData["Title"] = "Limbus Randomized Team Picker";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/css/identities.css" />
+</head>
+<body>
+    <header class="page-header">
+        <h1 class="site-title">Limbus Randomized Team Picker</h1>
+        <p class="site-subtitle">Browse and discover all Identity cards</p>
+    </header>
+
+    <main class="catalog-container">
+        <!-- Controls Section -->
+        <section class="catalog-controls">
+            <div class="search-wrapper">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.35-4.35" />
+                </svg>
+                <input type="text" id="searchInput" class="search-input" placeholder="Search identities..." autocomplete="off" aria-label="Search identities by name" />
+                <button id="clearSearch" class="clear-search-btn" title="Clear search" style="display: none;">&times;</button>
+            </div>
+
+            <div class="sort-wrapper">
+                <label for="sortSelect" class="sort-label">Sort:</label>
+                <select id="sortSelect" class="sort-select">
+                    <option value="name-asc">Name A-Z</option>
+                    <option value="name-desc">Name Z-A</option>
+                    <option value="character-asc">Character A-Z</option>
+                    <option value="character-desc">Character Z-A</option>
+                    <option value="rarity-asc">Rarity ↑</option>
+                    <option value="rarity-desc">Rarity ↓</option>
+                </select>
+            </div>
+
+            <div class="results-info">
+                <span id="resultsCount">Loading identities...</span>
+            </div>
+        </section>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading identities...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="error-state" style="display: none;">
+            <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <h3>Failed to Load Identities</h3>
+            <p id="errorMessage">An error occurred while loading the identities. Please try again later.</p>
+            <button id="retryButton" class="retry-btn">Retry</button>
+        </div>
+
+        <!-- Identity Cards Grid -->
+        <div id="catalogGrid" class="catalog-grid" style="display: none;"></div>
+
+        <!-- No Results State -->
+        <div id="noResultsState" class="no-results-state" style="display: none;">
+            <p>No identities found matching your search.</p>
+        </div>
+    </main>
+
+    <footer class="page-footer">
+        <p>Limbus Company Identity Catalog &copy; @DateTime.Now.Year</p>
+    </footer>
+
+    <script src="~/js/identities.js"></script>
+</body>
+</html>
