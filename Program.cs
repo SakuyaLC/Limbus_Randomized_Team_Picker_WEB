@@ -1,15 +1,18 @@
+using Limbus_Randomized_Team_Picker_WEB.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddHttpClient("WikiHttpClient", client =>
 {
     client.DefaultRequestHeaders.UserAgent.TryParseAdd("LimbusRandomizedTeamPicker/1.0");
     client.DefaultRequestHeaders.Accept.TryParseAdd("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
 });
-builder.Services.AddScoped<Limbus_Randomized_Team_Picker_WEB.Services.IIdentityScraperService, Limbus_Randomized_Team_Picker_WEB.Services.IdentityScraperService>();
-builder.Services.AddScoped<Limbus_Randomized_Team_Picker_WEB.Services.ITeamAssemblyService, Limbus_Randomized_Team_Picker_WEB.Services.TeamAssemblyService>();
+builder.Services.AddScoped<IIdentityScraperService, IdentityScraperService>();
+builder.Services.AddScoped<ITeamAssemblyService, TeamAssemblyService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {

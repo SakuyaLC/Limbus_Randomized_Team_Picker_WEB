@@ -113,7 +113,6 @@
                     <img 
                         src="${escapeHtml(identity.imageUrl)}" 
                         alt="${escapedName}"
-                        loading="lazy"
                         decoding="async"
                         width="125"
                         height="193"
@@ -158,6 +157,12 @@
         const html = filteredIdentities.map(identity => createCardHTML(identity)).join('');
         catalogGrid.innerHTML = html;
         attachCardListeners();
+
+        // Apply staggered animation delays to catalog cards (8ms for performance with large lists)
+        const cards = catalogGrid.querySelectorAll('.identity-card');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.008}s`;
+        });
     }
 
     // ============================================================
@@ -237,8 +242,6 @@
                     <img 
                         src="${escapeHtml(identity.imageUrl)}" 
                         alt="${escapedName}"
-                        loading="lazy"
-                        decoding="async"
                         width="125"
                         height="193"
                         class="team-card__image"
@@ -262,6 +265,12 @@
 
         const html = team.members.map(member => createTeamCardHTML(member)).join('');
         teamGrid.innerHTML = html;
+
+        // Apply staggered animation delays to team cards (8ms for smooth appearance)
+        const cards = teamGrid.querySelectorAll('.team-card');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.008}s`;
+        });
     }
 
     // ============================================================
@@ -287,6 +296,8 @@
 
             allIdentities = identities.map(identity => ({
                 ...identity,
+                // Map selectionKey to identityPageUrl for backward compatibility with selection logic
+                identityPageUrl: identity.selectionKey || identity.identityPageUrl,
                 isSelected: identity.isSelected === true
             }));
 
@@ -349,8 +360,7 @@
     }
 
     function updateAssembleBtnText() {
-        if (assembleTeam._originalText) return;
-        assembleTeam._originalText = 'Assemble Team';
+        assembleBtn.textContent = 'Assemble Team';
     }
 
     // ============================================================

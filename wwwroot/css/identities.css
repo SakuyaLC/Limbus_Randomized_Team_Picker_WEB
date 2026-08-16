@@ -625,6 +625,13 @@ body {
     display: block;
     border-radius: var(--radius-sm);
     transition: filter var(--transition-normal);
+    background: var(--color-bg-secondary);
+    opacity: 0;
+    transition: opacity 0.15s ease-in, filter var(--transition-normal);
+}
+
+.identity-card__image[src] {
+    opacity: 1;
 }
 
 .identity-card__rarity {
@@ -923,7 +930,7 @@ body {
 @keyframes card-enter {
     from {
         opacity: 0;
-        transform: translateY(12px);
+        transform: translateY(16px);
     }
     to {
         opacity: 1;
@@ -933,16 +940,5 @@ body {
 
 .identity-card,
 .team-card {
-    animation: card-enter 0.3s ease backwards;
-}
-
-.identity-card:nth-child(1), .team-card:nth-child(1) { animation-delay: 0.02s; }
-.identity-card:nth-child(2), .team-card:nth-child(2) { animation-delay: 0.04s; }
-.identity-card:nth-child(3), .team-card:nth-child(3) { animation-delay: 0.06s; }
-.identity-card:nth-child(4), .team-card:nth-child(4) { animation-delay: 0.08s; }
-.identity-card:nth-child(5), .team-card:nth-child(5) { animation-delay: 0.10s; }
-.identity-card:nth-child(6), .team-card:nth-child(6) { animation-delay: 0.12s; }
-.identity-card:nth-child(7), .team-card:nth-child(7) { animation-delay: 0.14s; }
-.identity-card:nth-child(8), .team-card:nth-child(8) { animation-delay: 0.16s; }
-.identity-card:nth-child(9), .team-card:nth-child(9) { animation-delay: 0.18s; }
-.identity-card:nth-child(10), .team-card:nth-child(10) { animation-delay: 0.20s; }
+    animation: card-enter 0.2s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}.

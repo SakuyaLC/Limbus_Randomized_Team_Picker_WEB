@@ -16,14 +16,14 @@ public class TeamAssemblyService : ITeamAssemblyService
     [
         "Yi Sang",
         "Faust",
-        "Sinclair",
+        "Don Quixote",
         "Ryōshū",
         "Meursault",
         "Hong Lu",
         "Heathcliff",
         "Ishmael",
         "Rodion",
-        "Don Quixote",
+        "Sinclair",
         "Outis",
         "Gregor"
     ];
@@ -32,7 +32,7 @@ public class TeamAssemblyService : ITeamAssemblyService
     /// Assembles a team of 12 characters by randomly selecting one selected identity per character.
     /// Uses cryptographically secure random number generation.
     /// </summary>
-    public AssembledTeam Assemble(List<Identity> identities)
+    public Task<AssembledTeam> AssembleAsync(List<Identity> identities, CancellationToken cancellationToken = default)
     {
         var team = new AssembledTeam();
 
@@ -60,6 +60,6 @@ public class TeamAssemblyService : ITeamAssemblyService
             team.Members.Add(member);
         }
 
-        return team;
+        return Task.FromResult(team);
     }
 }

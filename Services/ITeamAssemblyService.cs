@@ -11,6 +11,7 @@ public interface ITeamAssemblyService
     /// Assembles a team of 12 characters by randomly selecting one selected identity per character.
     /// </summary>
     /// <param name="identities">All available identities with selection state.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
     /// <returns>An AssembledTeam with exactly 12 ordered team member slots.</returns>
-    AssembledTeam Assemble(List<Identity> identities);
+    Task<AssembledTeam> AssembleAsync(List<Identity> identities, CancellationToken cancellationToken = default);
 }

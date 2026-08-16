@@ -8,9 +8,9 @@ namespace Limbus_Randomized_Team_Picker_WEB.Services;
 public interface IIdentityScraperService
 {
     /// <summary>
-    /// Fetches and parses the identities list page, returning all matching identities.
+    /// Fetches and parses the identities list page, returning all matching identities as DTOs.
     /// </summary>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
-    /// <returns>A collection of extracted identities.</returns>
-    Task<IList<Identity>> GetIdentitiesAsync(CancellationToken cancellationToken = default);
+    /// <returns>A collection of extracted identity DTOs.</returns>
+    Task<IList<IdentityResponseDto>> GetIdentitiesAsync(CancellationToken cancellationToken = default);
 }

@@ -2,7 +2,6 @@ using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Io;
 using Limbus_Randomized_Team_Picker_WEB.Models;
-using System.Linq;
 
 namespace Limbus_Randomized_Team_Picker_WEB.Services;
 
@@ -25,13 +24,13 @@ public class IdentityScraperService : IIdentityScraperService
     }
 
     /// <summary>
-    /// Fetches and parses the identities list page, returning all matching identities.
+    /// Fetches and parses the identities list page, returning all matching identities as DTOs.
     /// </summary>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
-    /// <returns>A collection of extracted identities.</returns>
+    /// <returns>A collection of extracted identity DTOs.</returns>
     /// <exception cref="WikiAccessDeniedException">Thrown when the wiki returns 403 Forbidden.</exception>
     /// <exception cref="HttpRequestException">Thrown when the HTTP request fails with a non-success status code.</exception>
-    public async Task<IList<Identity>> GetIdentitiesAsync(CancellationToken cancellationToken = default)
+    public async Task<IList<IdentityResponseDto>> GetIdentitiesAsync(CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync(IdentitiesPageUrl, cancellationToken);
 
@@ -49,53 +48,18 @@ public class IdentityScraperService : IIdentityScraperService
         }
 
         var html = await response.Content.ReadAsStringAsync(cancellationToken);
-
         var context = BrowsingContext.New(Configuration.Default);
         var document = await context.OpenAsync(req => req.Content(html));
 
-        // Diagnostic tracing
-        var allIdRecs = document.QuerySelectorAll(".IDRec");
-        System.Diagnostics.Debug.WriteLine($"[IdentityScraper] Total .IDRec elements: {allIdRecs.Length}");
-
-        var allImages = document.QuerySelectorAll("img");
-        System.Diagnostics.Debug.WriteLine($"[IdentityScraper] Total img elements: {allImages.Length}");
-
-        var imagesWithAlt = document.QuerySelectorAll("img[alt]");
-        System.Diagnostics.Debug.WriteLine($"[IdentityScraper] Total img[alt] elements: {imagesWithAlt.Length}");
-
-        // Sequential DOM traversal: walk through all direct children of the parser-output div,
-        // tracking the current character name as we encounter character header divs and grid containers.
         var parserOutput = document.QuerySelector(".mw-parser-output");
-        var identities = new List<Identity>();
-        var matchingCount = 0;
-
-        System.Diagnostics.Debug.WriteLine($"[IdentityScraper] parserOutput found: {parserOutput != null}");
+        var identities = new List<IdentityResponseDto>();
 
         if (parserOutput != null)
         {
             var currentCharacter = "Unknown";
 
-            // Find all character headers in the document (span[id] > b)
-            var allCharacterSpans = parserOutput.QuerySelectorAll("span[id]");
-            var characterNames = new List<string>();
-            foreach (var span in allCharacterSpans)
-            {
-                var b = span.QuerySelector("b");
-                if (b != null)
-                {
-                    var name = b.TextContent.Trim();
-                    if (!string.IsNullOrEmpty(name) && name.Length > 1 && name.Length < 100)
-                    {
-                        characterNames.Add(name);
-                    }
-                }
-            }
-
-            System.Diagnostics.Debug.WriteLine($"[IdentityScraper] Found {characterNames.Count} character headers");
-
             // Find all grid containers (divs with display: grid that contain IDRec)
             var allGrids = parserOutput.QuerySelectorAll("div[style*='display: grid']");
-            System.Diagnostics.Debug.WriteLine($"[IdentityScraper] Found {allGrids.Length} grid containers");
 
             // For each grid container, find its preceding sibling that contains a character header
             for (var i = 0; i < allGrids.Length; i++)
@@ -143,33 +107,29 @@ public class IdentityScraperService : IIdentityScraperService
                     prevSibling = prevSibling.PreviousElementSibling;
                 }
 
-                System.Diagnostics.Debug.WriteLine($"[IdentityScraper] Grid {i} has character: {gridCharacterName}");
-
                 // Process all IDRec elements inside this grid container
                 var idRecs = grid.QuerySelectorAll(".IDRec");
-                System.Diagnostics.Debug.WriteLine($"[IdentityScraper] Grid {i} has {idRecs.Length} IDRec elements");
 
                 foreach (var idRec in idRecs)
                 {
-                    var identity = ExtractIdentity(idRec, gridCharacterName);
-                    if (identity != null)
+                    var dto = ExtractIdentityDto(idRec, gridCharacterName);
+                    if (dto != null)
                     {
-                        identities.Add(identity);
-                        matchingCount++;
-                        System.Diagnostics.Debug.WriteLine($"[IdentityScraper] Matched: {identity.IdentityName} ({identity.ImageFileName}) Character: {gridCharacterName}");
+                        identities.Add(dto);
                     }
                 }
             }
         }
 
-        System.Diagnostics.Debug.WriteLine($"[IdentityScraper] Total matching identities: {matchingCount}");
-
-        return identities.Distinct(new IdentityEqualityComparer()).ToList();
+        return identities;
     }
 
-    private static Identity? ExtractIdentity(IElement idRec, string characterName)
+    /// <summary>
+    /// Extracts identity data from an IDRec element and returns a DTO.
+    /// </summary>
+    private static IdentityResponseDto? ExtractIdentityDto(IElement idRec, string characterName)
     {
-        // Extract rarity from <div class="IDRar RarX"> inside IDRec
+        // Extract rarity from div.IDRar inside IDRec
         var rarDiv = idRec.QuerySelector("div.IDRar");
         int rarity = 1; // default to Rar1
         if (rarDiv != null)
@@ -189,13 +149,12 @@ public class IdentityScraperService : IIdentityScraperService
         foreach (var img in images)
         {
             var alt = img.GetAttribute("alt");
-            var src = img.GetAttribute("src");
 
-            // Use alt attribute for identity detection (e.g., "Seven Assoc. South Section 6 Yi Sang Uptied.png")
+            // Use alt attribute for identity detection
             if (string.IsNullOrEmpty(alt))
                 continue;
 
-            // Extract filename from alt (it should be just the filename, not a path)
+            // Extract filename from alt
             var fileName = System.IO.Path.GetFileName(alt);
             if (string.IsNullOrEmpty(fileName))
                 continue;
@@ -203,9 +162,10 @@ public class IdentityScraperService : IIdentityScraperService
             // Normalize: remove file extension for filtering
             var imageNameWithoutExtension = System.IO.Path.GetFileNameWithoutExtension(fileName);
 
-            // Apply filtering rules to the normalized name
-            bool matches = imageNameWithoutExtension.StartsWith("LCB Sinner", StringComparison.OrdinalIgnoreCase)
-                        || imageNameWithoutExtension.EndsWith("Uptied", StringComparison.OrdinalIgnoreCase);
+            // Apply filtering rules for Limbus Company identities
+            // Images should contain "Uptied" or be Sinner-related
+            bool matches = imageNameWithoutExtension.Contains("Uptied", StringComparison.OrdinalIgnoreCase)
+                        || imageNameWithoutExtension.Contains("Sinner", StringComparison.OrdinalIgnoreCase);
 
             if (matches)
             {
@@ -218,7 +178,7 @@ public class IdentityScraperService : IIdentityScraperService
         if (matchingImage == null || string.IsNullOrEmpty(identityFileName))
             return null;
 
-        // Find the identity name text link: <div style="line-height:1.1em..."><a href="...wiki/...">IdentityName</a></div>
+        // Find the identity name text link
         var nameDiv = idRec.QuerySelector("div[style*=\"line-height:1.1em\"]");
         IElement? identityLink = null;
         string? identityName = null;
@@ -237,7 +197,7 @@ public class IdentityScraperService : IIdentityScraperService
             }
         }
 
-        // Fallback: if the text link wasn't found, try to derive from the image alt attribute
+        // Fallback: derive from image alt attribute
         if (string.IsNullOrEmpty(identityName))
         {
             var alt = matchingImage.GetAttribute("alt") ?? string.Empty;
@@ -248,64 +208,61 @@ public class IdentityScraperService : IIdentityScraperService
         var thumbnailUrl = ResolveUrl(matchingImage.GetAttribute("src")!);
         var imageUrl = ConvertThumbnailToOriginalUrl(thumbnailUrl, identityFileName);
 
-        return new Identity
+        return new IdentityResponseDto
         {
             CharacterName = characterName,
             IdentityName = identityName ?? string.Empty,
-            IdentityPageUrl = identityPageUrl,
             ImageUrl = imageUrl,
-            ImageFileName = identityFileName,
-            Rarity = rarity
+            Rarity = rarity,
+            SelectionKey = identityPageUrl
         };
     }
 
     /// <summary>
     /// Converts a wiki thumbnail URL to the original image URL.
-    /// Example: /images/thumb/File.png/125px-File.png?hash -> /images/File.png
+    /// Example: /images/thumb/File.png/125px-Filename.png?hash -> /images/Filename.png
     /// </summary>
     private static string ConvertThumbnailToOriginalUrl(string thumbnailUrl, string? fileName)
     {
-        if (string.IsNullOrEmpty(thumbnailUrl))
-            return string.Empty;
-
-        // Try to extract the original filename from the thumbnail URL
-        // Format: /images/thumb/FILENAME/125px-FILENAME?hash
-        // Or: https://limbuscompany.wiki.gg/images/thumb/FILENAME/125px-FILENAME?hash
-
         try
         {
             var uri = new Uri(thumbnailUrl);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}";
             var path = uri.AbsolutePath;
 
-            // Check if it's a thumbnail URL
-            if (!path.Contains("/images/thumb/"))
-                return thumbnailUrl;
+            // Thumbnail URL format: /images/thumb/Filename.png/125px-OriginalName.png?hash
+            // We need to extract the original filename (after the px- part)
 
-            // Extract the filename from the path
-            // Path: /images/thumb/FILENAME/125px-FILENAME?hash
-            var parts = path.Split('/');
-            // Find "thumb" and take the next part as filename
-            for (int i = 0; i < parts.Length - 1; i++)
+            // Try to extract from thumbnail path: match pattern /125px-OriginalName.png
+            var match = System.Text.RegularExpressions.Regex.Match(path, @"/\d+px-([^/?]+)");
+            if (match.Success)
             {
-                if (parts[i] == "thumb" && i + 1 < parts.Length)
-                {
-                    var originalFileName = parts[i + 1];
-                    // Remove query string if present
-                    originalFileName = originalFileName.Split('?')[0];
-
-                    // Construct original URL: /images/FILENAME
-                    var baseUrl = WikiBaseUrl;
-                    if (!baseUrl.EndsWith("/"))
-                        baseUrl += "/";
-
-                    return baseUrl + "images/" + originalFileName;
-                }
+                var originalFileName = match.Groups[1].Value;
+                return baseUrl + "/images/" + originalFileName;
             }
 
-            // Fallback: try to use ImageFileName
+            // Fallback: try to extract the main filename (without px- prefix)
+            var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length >= 2)
+            {
+                var lastSegment = segments.Last();
+                // Remove query string if present
+                lastSegment = lastSegment.Split('?')[0];
+
+                // If it contains px-, extract after it
+                if (lastSegment.Contains("px-"))
+                {
+                    var originalFileName = lastSegment.Split(new[] { "px-" }, StringSplitOptions.None)[1];
+                    return baseUrl + "/images/" + originalFileName;
+                }
+
+                return baseUrl + "/images/" + lastSegment;
+            }
+
+            // Final fallback: use ImageFileName if available
             if (!string.IsNullOrEmpty(fileName))
             {
-                return WikiBaseUrl + "/images/" + fileName;
+                return baseUrl + "/images/" + fileName;
             }
 
             return thumbnailUrl;
@@ -329,25 +286,6 @@ public class IdentityScraperService : IIdentityScraperService
             return WikiBaseUrl + url;
 
         return WikiBaseUrl + "/" + url;
-    }
-}
-
-/// <summary>
-/// Equality comparer for <see cref="Identity"/> objects based on identity page URL.
-/// </summary>
-internal sealed class IdentityEqualityComparer : IEqualityComparer<Identity>
-{
-    public bool Equals(Identity? x, Identity? y)
-    {
-        if (x is null || y is null)
-            return false;
-
-        return string.Equals(x.IdentityPageUrl, y.IdentityPageUrl, StringComparison.OrdinalIgnoreCase);
-    }
-
-    public int GetHashCode(Identity obj)
-    {
-        return obj.IdentityPageUrl?.ToLowerInvariant().GetHashCode() ?? 0;
     }
 }
 

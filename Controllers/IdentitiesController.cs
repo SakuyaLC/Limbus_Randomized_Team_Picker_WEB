@@ -1,4 +1,3 @@
-using Limbus_Randomized_Team_Picker_WEB.Models;
 using Limbus_Randomized_Team_Picker_WEB.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,7 +25,7 @@ public class IdentitiesController : ControllerBase
     /// Retrieves all scraped identities from the Limbus Company Wiki.
     /// </summary>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
-    /// <returns>A JSON array of identities, or an error response if scraping fails.</returns>
+    /// <returns>A JSON array of identity DTOs, or an error response if scraping fails.</returns>
     [HttpGet]
     public async Task<IActionResult> GetIdentities(CancellationToken cancellationToken = default)
     {

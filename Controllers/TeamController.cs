@@ -1,6 +1,7 @@
 using Limbus_Randomized_Team_Picker_WEB.Models;
 using Limbus_Randomized_Team_Picker_WEB.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Limbus_Randomized_Team_Picker_WEB.Controllers;
 
@@ -13,14 +14,18 @@ public class TeamController : ControllerBase
 {
     private readonly ITeamAssemblyService _assemblyService;
     private readonly IIdentityScraperService _scraperService;
+    private readonly IMemoryCache _cache;
+    private const string IdentitiesCacheKey = "identities_cache";
+    private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(10);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TeamController"/>.
     /// </summary>
-    public TeamController(ITeamAssemblyService assemblyService, IIdentityScraperService scraperService)
+    public TeamController(ITeamAssemblyService assemblyService, IIdentityScraperService scraperService, IMemoryCache cache)
     {
         _assemblyService = assemblyService;
         _scraperService = scraperService;
+        _cache = cache;
     }
 
     /// <summary>
@@ -36,26 +41,46 @@ public class TeamController : ControllerBase
             return BadRequest(new { error = "Request body is required." });
         }
 
+        if (request.SelectedIdentityPageUrls == null || request.SelectedIdentityPageUrls.Count == 0)
+        {
+            return BadRequest(new { error = "At least one identity must be selected." });
+        }
+
         try
         {
-            var identities = await _scraperService.GetIdentitiesAsync(CancellationToken.None);
+            // Retrieve identities from cache or scrape
+            var identitiesDto = await GetIdentitiesFromCacheAsync();
 
-            // Mark identities based on selected URLs
-            var identitiesList = identities as List<Identity> ?? identities.ToList();
-            var selectedUrls = new HashSet<string>(request.SelectedIdentityPageUrls, StringComparer.OrdinalIgnoreCase);
-            foreach (var identity in identitiesList)
+            // Map DTOs to Identity model for assembly service
+            var identities = identitiesDto.Select(dto => new Identity
             {
-                identity.IsSelected = selectedUrls.Contains(identity.IdentityPageUrl);
-            }
+                CharacterName = dto.CharacterName,
+                IdentityName = dto.IdentityName,
+                ImageUrl = dto.ImageUrl,
+                Rarity = dto.Rarity,
+                IsSelected = request.SelectedIdentityPageUrls.Any(url => string.Equals(url, dto.SelectionKey, StringComparison.OrdinalIgnoreCase))
+            }).ToList();
 
             // Assemble team using cryptographically secure random
-            var team = _assemblyService.Assemble(identitiesList);
+            var team = await _assemblyService.AssembleAsync(identities);
             return Ok(team);
         }
         catch (Exception ex)
         {
             return StatusCode(500, new { error = "Failed to assemble team.", details = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Retrieves identities from cache, or fetches and caches them if not present.
+    /// </summary>
+    private async Task<IList<IdentityResponseDto>> GetIdentitiesFromCacheAsync()
+    {
+        return await _cache.GetOrCreateAsync(IdentitiesCacheKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = CacheExpiration;
+            return await _scraperService.GetIdentitiesAsync();
+        }) ?? throw new InvalidOperationException("Failed to retrieve identities from cache.");
     }
 }
 
