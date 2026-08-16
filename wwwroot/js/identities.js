@@ -158,10 +158,10 @@
         catalogGrid.innerHTML = html;
         attachCardListeners();
 
-        // Apply staggered animation delays to catalog cards (8ms for performance with large lists)
+        // Apply staggered animation delays to catalog cards (6ms for smooth performance with large lists)
         const cards = catalogGrid.querySelectorAll('.identity-card');
         cards.forEach((card, index) => {
-            card.style.animationDelay = `${index * 0.008}s`;
+            card.style.animationDelay = `${index * 0.006}s`;
         });
     }
 
@@ -266,10 +266,10 @@
         const html = team.members.map(member => createTeamCardHTML(member)).join('');
         teamGrid.innerHTML = html;
 
-        // Apply staggered animation delays to team cards (8ms for smooth appearance)
+        // Apply staggered animation delays to team cards (6ms for smooth appearance)
         const cards = teamGrid.querySelectorAll('.team-card');
         cards.forEach((card, index) => {
-            card.style.animationDelay = `${index * 0.008}s`;
+            card.style.animationDelay = `${index * 0.006}s`;
         });
     }
 
@@ -334,25 +334,36 @@
         assembleBtn.textContent = 'Assembling...';
 
         try {
+            console.log('Sending request to /api/team/assemble with', selectedUrls.length, 'selected identities');
+
+            const requestBody = JSON.stringify({ selectedIdentityPageUrls: selectedUrls });
+            console.log('Request body:', requestBody);
+
             const response = await fetch('/api/team/assemble', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ selectedIdentityPageUrls: selectedUrls })
+                body: requestBody
             });
 
+            console.log('Response status:', response.status);
+            console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                throw new Error(`HTTP error! status: ${response.status}. Details: ${errorText}`);
             }
 
             const team = await response.json();
+            console.log('Team assembled successfully:', team);
             assembledTeam = team;
             renderTeam(team);
 
         } catch (error) {
             console.error('Failed to assemble team:', error);
-            alert(`Failed to assemble team: ${error.message || 'Unknown error'}`);
+            alert(`Failed to assemble team: ${error.message || 'Unknown error'}\n\nCheck console (F12) for details.`);
         } finally {
             assembleBtn.disabled = false;
             updateAssembleBtnText();

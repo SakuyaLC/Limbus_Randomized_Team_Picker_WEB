@@ -8,8 +8,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Browse and discover all Identity cards from Limbus Company. Click to select your favorites and assemble your team." />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>@ViewData["Title"]</title>
-    <link rel="stylesheet" href="~/css/identities.css" />
+    <link rel="stylesheet" href="~/css/identities.css?v=@DateTimeOffset.Now.Ticks" />
     <link rel="icon" type="image/x-icon" href="~/favicon.ico" />
 </head>
 <body>
